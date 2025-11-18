@@ -17,11 +17,10 @@ class Film extends Model
         'duration',
         'rating',
         'release_date',
-        'trailer',
         'poster',
-        'synopsis', // TAMBAHKAN
+        'synopsis', 
         'status',
-        'studio', // Pastikan ini string
+        'studio', 
     ];
 
     protected $casts = [

@@ -43,7 +43,6 @@ class FilmController extends Controller
                 'status' => 'required|string|max:50',
                 'studio' => 'required|string|max:100',
                 'poster' => 'nullable|string|max:500',
-                'trailer' => 'nullable|string|max:500',
                 'synopsis' => 'nullable|string'
             ]);
 
@@ -112,7 +111,6 @@ class FilmController extends Controller
                 'status' => 'sometimes|required|string|max:50',
                 'studio' => 'sometimes|required|string|max:100',
                 'poster' => 'nullable|string|max:500',
-                'trailer' => 'nullable|string|max:500',
                 'synopsis' => 'nullable|string'
             ]);
 

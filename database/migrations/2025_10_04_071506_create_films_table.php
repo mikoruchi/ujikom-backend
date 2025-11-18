@@ -21,7 +21,6 @@ return new class extends Migration {
             $table->integer('duration');
             $table->float('rating')->default(0);
             $table->date('release_date')->nullable();
-            $table->string('trailer')->nullable();
             $table->text('synopsis')->nullable();
             $table->string('poster')->nullable();
             $table->string('status', 50)->default('upcoming');

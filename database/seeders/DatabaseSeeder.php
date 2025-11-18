@@ -84,7 +84,7 @@ class DatabaseSeeder extends Seeder
                 'status' => 'playing',
                 'studio' => 'Warner Bros Pictures', // Ubah dari studio_id menjadi studio
                 'poster' => 'https://image.tmdb.org/t/p/w500/rypWkdJN3X2rH7WDRi48H5fDL5t.jpg',
-                'trailer' => 'https://www.youtube.com/watch?v=T50YHY27izc'
+                
             ],
             [
                 'title' => 'Comedy of Life', 
@@ -95,7 +95,6 @@ class DatabaseSeeder extends Seeder
                 'status' => 'playing',
                 'studio' => 'Universal Pictures',
                 'poster' => 'https://image.tmdb.org/t/p/w500/8Gxv8gSFCU0XGDykEGv7zR1n2ua.jpg',
-                'trailer' => 'https://www.youtube.com/watch?v=example1'
             ],
             [
                 'title' => 'The Silent Lake', 
@@ -106,7 +105,6 @@ class DatabaseSeeder extends Seeder
                 'status' => 'upcoming',
                 'studio' => 'Blumhouse Productions',
                 'poster' => 'https://image.tmdb.org/t/p/w500/8bcoRX3hQRHufLPSDREdvr3YMXx.jpg',
-                'trailer' => 'https://www.youtube.com/watch?v=example2'
             ],
             [
                 'title' => 'Space Odyssey', 
@@ -117,7 +115,6 @@ class DatabaseSeeder extends Seeder
                 'status' => 'playing',
                 'studio' => 'Marvel Studios',
                 'poster' => 'https://image.tmdb.org/t/p/w500/or06FN3Dka5tukK1e9sl16pB3iy.jpg',
-                'trailer' => 'https://www.youtube.com/watch?v=example3'
             ],
             
             
