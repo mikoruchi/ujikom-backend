@@ -9,29 +9,47 @@ class Payment extends Model
 {
     use HasFactory;
 
+    // Field yang bisa diisi massal
     protected $fillable = [
+        'film_id', 
         'user_id', 
-        'amount', 
-        'admin_fee', 
-        'total_amount', 
+        'jadwal_id',     // relasi ke jadwal
+        'kursi',         // JSON array kursi ["E10","E11","E12"]
+        'ticket_count',  // jumlah tiket
+        'subtotal',      // total sebelum admin fee
+        'total_amount',  // total yang dibayar
         'method', 
         'status',
-        'booking_id'
     ];
 
+    // Casting untuk tipe data
     protected $casts = [
-        'amount' => 'decimal:2',
-        'admin_fee' => 'decimal:2',
+        'kursi' => 'array',        // cast JSON ke array
+        'subtotal' => 'decimal:2',
         'total_amount' => 'decimal:2',
     ];
 
+    /**
+     * Relasi ke user (siapa yang membayar)
+     */
     public function user()
     {
         return $this->belongsTo(User::class);
     }
 
-    public function tickets()
+    /**
+     * Relasi ke jadwal (film, studio, tanggal & jam)
+     */
+    public function jadwal()
     {
-        return $this->hasMany(Ticket::class);
+        return $this->belongsTo(Jadwal::class);
+    }
+
+    /**
+     * Helper untuk menampilkan ringkasan kursi
+     */
+    public function kursiList()
+    {
+        return implode(', ', $this->kursi ?? []);
     }
 }

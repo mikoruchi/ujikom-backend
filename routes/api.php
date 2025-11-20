@@ -9,7 +9,6 @@ use App\Http\Controllers\Api\V1\StudioController;
 use App\Http\Controllers\Api\V1\TicketPriceController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\SeatController;
-use App\Http\Controllers\TicketController;
 use App\Http\Controllers\PaymentController;
 
 Route::prefix('v1')->group(function () {
@@ -122,18 +121,7 @@ Route::prefix('v1')->group(function () {
         /*
         | TICKETS
         */
-        Route::prefix('tickets')->group(function () {
-            Route::get('/', [TicketController::class, 'getUserTickets']);
-            Route::post('/', [TicketController::class, 'store']);
-            Route::get('/{id}', [TicketController::class, 'show']);
-            Route::put('/{id}/status', [TicketController::class, 'updateStatus']);
-            Route::delete('/{id}/cancel', [TicketController::class, 'cancel']);
-        });
-
-        // Booked / Available seats
-        Route::get('/schedules/{scheduleId}/booked-seats', [TicketController::class, 'getBookedSeats']);
-        Route::get('/tickets/jadwal/{jadwalId}/booked-seats', [TicketController::class, 'getBookedSeats']);
-        Route::get('/tickets/jadwal/{jadwalId}/available-seats', [TicketController::class, 'getAvailableSeats']);
+        
 
         /*
         | PAYMENTS

@@ -10,7 +10,6 @@ return new class extends Migration
     {
         Schema::create('kasir_transactions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('ticket_id')->constrained('tickets')->onDelete('cascade');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamp('transaction_date')->useCurrent();
             $table->timestamps(); 

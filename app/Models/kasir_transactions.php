@@ -11,10 +11,7 @@ class KasirTransaction extends Model
 
     protected $fillable = ['ticket_id','user_id','transaction_date'];
 
-    public function ticket()
-    {
-        return $this->belongsTo(Ticket::class);
-    }
+    
 
     public function user()
     {
