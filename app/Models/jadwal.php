@@ -21,6 +21,10 @@ class Jadwal extends Model
     {
         return $this->belongsTo(Film::class);
     }
+    public function movie()
+    {
+        return $this->belongsTo(Film::class);
+    }
 
     public function studio()
     {

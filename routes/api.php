@@ -126,9 +126,13 @@ Route::prefix('v1')->group(function () {
         /*
         | PAYMENTS
         */
-        Route::post('/payments/process', [PaymentController::class, 'processPayment']);
-        Route::get('/payments/history', [PaymentController::class, 'getPaymentHistory']);
-        Route::put('/payments/{id}/status', [PaymentController::class, 'updatePaymentStatus']);
+       Route::post('/payments/process', [PaymentController::class, 'processPayment']);
+    Route::get('/payments/history', [PaymentController::class, 'getPaymentHistory']);
+    Route::put('/payments/{id}/status', [PaymentController::class, 'updatePaymentStatus']);
+    Route::post('/payments/{id}/mark-printed', [PaymentController::class, 'markAsPrinted']);
+    
+    // Cashier routes
+    Route::get('/cashier/transactions', [PaymentController::class, 'getCashierTransactions']);
     });
 
 });
