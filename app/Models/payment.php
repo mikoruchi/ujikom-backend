@@ -52,4 +52,9 @@ class Payment extends Model
     {
         return implode(', ', $this->kursi ?? []);
     }
+
+    public function film()
+{
+    return $this->belongsTo(Film::class, 'film_id'); // pastikan ada kolom film_id di payments
+}
 }

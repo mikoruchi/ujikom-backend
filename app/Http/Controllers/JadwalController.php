@@ -168,106 +168,118 @@ class JadwalController extends Controller
         }
     }
 
-    // ✅ Method store untuk membuat jadwal baru
     public function store(Request $request)
-    {
-        try {
-            Log::info('Store jadwal request:', $request->all());
-            
-            $validated = $request->validate([
-                'film_id' => 'required|exists:films,id',
-                'studio_id' => 'required|exists:studios,id',
-                'show_date' => 'required|date',
-                'show_time' => 'required',
-                'price' => 'required|numeric|min:0',
-            ]);
+{
+    Log::info('Store Jadwal Request:', $request->all());
 
-            Log::info('Validated data:', $validated);
+    try {
 
-            $jadwal = Jadwal::create($validated);
-            $jadwal->load(['film', 'studio']);
+        // FIX: cek apakah film_id ada di request
+        if (!$request->has('film_id')) {
+            Log::error('film_id MISSING in request:', $request->all());
 
-            Log::info('Jadwal created successfully:', ['id' => $jadwal->id]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Jadwal berhasil ditambahkan',
-                'data' => $jadwal
-            ], 201);
-
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation error in store:', $e->errors());
             return response()->json([
                 'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $e->errors()
+                'message' => 'film_id harus dikirim',
+                'errors' => ['film_id' => ['field film_id wajib dikirim']]
             ], 422);
-        } catch (\Exception $e) {
-            Log::error('Error in store: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal menambahkan jadwal',
-                'error' => $e->getMessage()
-            ], 500);
         }
+
+        $validated = $request->validate([
+            'film_id' => 'required|exists:films,id',
+            'studio_id' => 'required|exists:studios,id',
+            'show_date' => 'required|date',
+            'show_time' => 'required',
+            'price' => 'required|numeric|min:0',
+        ]);
+
+        Log::info('Validated jadwal data:', $validated);
+
+        $jadwal = Jadwal::create($validated);
+        $jadwal->load(['film', 'studio']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jadwal berhasil ditambahkan',
+            'data' => $jadwal
+        ], 201);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        Log::error('Validation ERROR:', $e->errors());
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $e->errors()
+        ], 422);
+
+    } catch (\Exception $e) {
+        Log::error('STORE ERROR: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal menambahkan jadwal',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     // ✅ Method update untuk mengupdate jadwal
     public function update(Request $request, $id)
-    {
-        try {
-            Log::info('Update jadwal request:', [
-                'id' => $id,
-                'data' => $request->all()
-            ]);
+{
+    Log::info('Update Jadwal Request:', ['id' => $id, 'data' => $request->all()]);
 
-            $jadwal = Jadwal::findOrFail($id);
-            Log::info('Found jadwal:', $jadwal->toArray());
+    try {
 
-            $validated = $request->validate([
-                'film_id' => 'required|exists:films,id',
-                'studio_id' => 'required|exists:studios,id',
-                'show_date' => 'required|date',
-                'show_time' => 'required',
-                'price' => 'required|numeric|min:0',
-            ]);
+        $jadwal = Jadwal::findOrFail($id);
 
-            Log::info('Validated update data:', $validated);
-
-            $jadwal->update($validated);
-            $jadwal->load(['film', 'studio']);
-
-            Log::info('Jadwal updated successfully:', $jadwal->toArray());
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Jadwal berhasil diperbarui',
-                'data' => $jadwal
-            ]);
-
-        } catch (ModelNotFoundException $e) {
-            Log::error('Jadwal not found for update:', ['id' => $id]);
+        // >>> FIX MISSING FILM_ID <<<
+        if (!$request->has('film_id')) {
             return response()->json([
                 'success' => false,
-                'message' => 'Jadwal tidak ditemukan'
-            ], 404);
-        } catch (\Illuminate\Validation\ValidationException $e) {
-            Log::error('Validation error in update:', $e->errors());
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $e->errors()
+                'message' => 'film_id harus dikirim untuk update',
+                'errors' => ['film_id' => ['field film_id wajib dikirim']]
             ], 422);
-        } catch (\Exception $e) {
-            Log::error('Error in update: ' . $e->getMessage());
-            Log::error('Stack trace: ' . $e->getTraceAsString());
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memperbarui jadwal: ' . $e->getMessage(),
-                'error' => $e->getMessage()
-            ], 500);
         }
+
+        $validated = $request->validate([
+            'film_id' => 'required|exists:films,id',
+            'studio_id' => 'required|exists:studios,id',
+            'show_date' => 'required|date',
+            'show_time' => 'required',
+            'price' => 'required|numeric|min:0',
+        ]);
+
+        $jadwal->update($validated);
+        $jadwal->load(['film', 'studio']);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Jadwal berhasil diperbarui',
+            'data' => $jadwal
+        ]);
+
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $e->errors()
+        ], 422);
+
+    } catch (ModelNotFoundException $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Jadwal tidak ditemukan'
+        ], 404);
+
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memperbarui jadwal',
+            'error' => $e->getMessage()
+        ], 500);
     }
+}
+
 
     // ✅ Method destroy untuk menghapus jadwal
     public function destroy($id)

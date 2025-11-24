@@ -10,10 +10,10 @@ class Jadwal extends Model
     use HasFactory;
 
     protected $fillable = [
-        'movie_id',
+        'film_id',
         'studio_id',
-        'date',
-        'time',
+        'show_date',
+        'show_time',
         'price'
     ];
 
@@ -31,8 +31,5 @@ class Jadwal extends Model
         return $this->belongsTo(Studio::class);
     }
 
-    public function tickets()
-    {
-        return $this->hasMany(Ticket::class);
-    }
+    
 }

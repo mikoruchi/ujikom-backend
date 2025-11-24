@@ -45,8 +45,6 @@ Route::prefix('v1')->group(function () {
     Route::get('/jadwals/movie/{movieId}', [JadwalController::class, 'getSchedulesByMovie']);
     Route::get('/studios-list', [JadwalController::class, 'getStudios']);
 
-
-
     /*
     |--------------------------------------------------------------------------
     | PROTECTED ROUTES (BUTUH LOGIN)
@@ -119,20 +117,19 @@ Route::prefix('v1')->group(function () {
         Route::delete('/ticket-prices/{id}', [TicketPriceController::class, 'destroy']);
 
         /*
-        | TICKETS
+        | PAYMENTS - PERBAIKAN ROUTE
         */
-        
+        Route::prefix('payments')->group(function () {
+            Route::get('/', [PaymentController::class, 'getAllPayments']);
+            Route::get('/stats', [PaymentController::class, 'getPaymentStats']);
+            Route::post('/process', [PaymentController::class, 'processPayment']);
+            Route::get('/history', [PaymentController::class, 'getPaymentHistory']);
+            Route::get('/{id}/invoice', [PaymentController::class, 'getInvoiceData']);
+            Route::put('/{id}/status', [PaymentController::class, 'updatePaymentStatus']);
+            Route::post('/{id}/mark-printed', [PaymentController::class, 'markAsPrinted']);
+            Route::get('/cashier/transactions', [PaymentController::class, 'getCashierTransactions']);
+        });
 
-        /*
-        | PAYMENTS
-        */
-       Route::post('/payments/process', [PaymentController::class, 'processPayment']);
-    Route::get('/payments/history', [PaymentController::class, 'getPaymentHistory']);
-    Route::put('/payments/{id}/status', [PaymentController::class, 'updatePaymentStatus']);
-    Route::post('/payments/{id}/mark-printed', [PaymentController::class, 'markAsPrinted']);
-    
-    // Cashier routes
-    Route::get('/cashier/transactions', [PaymentController::class, 'getCashierTransactions']);
     });
 
 });
