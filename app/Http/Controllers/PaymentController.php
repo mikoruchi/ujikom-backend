@@ -161,95 +161,90 @@ class PaymentController extends Controller
         }
     }
      
-    public function processPayment(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'film_id' => 'required|exists:films,id',
-            'jadwal_id' => 'required|exists:jadwals,id',
-            'kursi' => 'required|array|min:1',
-            'method' => 'required|in:cash,transfer,gopay,dana,ovo,bca,mandiri',
-            'total_amount' => 'required|numeric|min:0'
+public function processPayment(Request $request)
+{
+    $validator = Validator::make($request->all(), [
+        'film_id' => 'required|exists:films,id',
+        'jadwal_id' => 'required|exists:jadwals,id',
+        'kursi' => 'required|array|min:1',
+        'method' => 'required|in:cash,transfer,gopay,dana,ovo,bca,mandiri'
+    ]);
+
+    if ($validator->fails()) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Validasi gagal',
+            'errors' => $validator->errors()
+        ], 422);
+    }
+
+    try {
+        DB::beginTransaction();
+
+        $user = auth()->user();
+
+        // Ambil jadwal dengan relasi film dan studio
+        $jadwal = Jadwal::with(['film', 'studio'])->findOrFail($request->jadwal_id);
+
+        // Generate booking code
+        $bookingCode = 'BK' . date('YmdHis') . rand(100, 999);
+
+        // Hitung subtotal
+        $subtotal = 0;
+        $seatDetails = [];
+        foreach ($request->kursi as $seat) {
+            $seatType = strtoupper(substr($seat, 0, 1)) === 'V' ? 'vip' : 'regular';
+            $seatPrice = $seatType === 'vip' ? $jadwal->price + 20000 : $jadwal->price;
+            $subtotal += $seatPrice;
+            $seatDetails[] = [
+                'seat' => $seat,
+                'type' => $seatType,
+                'price' => $seatPrice
+            ];
+        }
+
+        // Admin fee
+        $adminFee = $this->getAdminFee($request->method);
+
+        // Total amount dihitung otomatis
+        $totalAmount = $subtotal + $adminFee;
+
+        // Simpan ke tabel payment
+        $payment = Payment::create([
+            'film_id' => $request->film_id,
+            'user_id' => $user->id,
+            'jadwal_id' => $jadwal->id,
+            'kursi' => json_encode($request->kursi),
+            'seat_details' => json_encode($seatDetails),
+            'ticket_count' => count($request->kursi),
+            'subtotal' => $subtotal,
+            'admin_fee' => $adminFee,
+            'total_amount' => $totalAmount, // otomatis
+            'method' => $request->method,
+            'booking_code' => $bookingCode,
+            'status' => 'success',
         ]);
 
-        if ($validator->fails()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Validasi gagal',
-                'errors' => $validator->errors()
-            ], 422);
-        }
+        DB::commit();
 
-        try {
-            DB::beginTransaction();
+        return response()->json([
+            'success' => true,
+            'message' => 'Pembayaran berhasil diproses',
+            'data' => $payment->load(['jadwal.film', 'jadwal.studio']),
+            'total_amount' => $totalAmount // kirim ke frontend
+        ]);
+    } 
+    catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Payment Processing Error: ' . $e->getMessage());
 
-            $user = auth()->user();
-
-            // Ambil jadwal dengan relasi film dan studio
-            $jadwal = Jadwal::with(['film', 'studio'])->findOrFail($request->jadwal_id);
-
-            // Generate booking code
-            $bookingCode = 'BK' . date('YmdHis') . rand(100, 999);
-
-            // Hitung subtotal
-            $subtotal = 0;
-            $seatDetails = [];
-            foreach ($request->kursi as $seat) {
-                $seatType = strtoupper(substr($seat, 0, 1)) === 'V' ? 'vip' : 'regular';
-                $seatPrice = $seatType === 'vip' ? $jadwal->price + 20000 : $jadwal->price;
-                $subtotal += $seatPrice;
-                $seatDetails[] = [
-                    'seat' => $seat,
-                    'type' => $seatType,
-                    'price' => $seatPrice
-                ];
-            }
-
-            // Admin fee
-            $adminFee = $this->getAdminFee($request->method);
-            $totalAmount = $subtotal + $adminFee;
-
-            if ($request->total_amount < $totalAmount) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Jumlah pembayaran tidak mencukupi',
-                    'expected_amount' => $totalAmount
-                ], 422);
-            }
-
-            // Simpan ke tabel payment
-            $payment = Payment::create([
-                'film_id' => $request->film_id,
-                'user_id' => $user->id,
-                'jadwal_id' => $jadwal->id,
-                'kursi' => json_encode($request->kursi),
-                'seat_details' => json_encode($seatDetails),
-                'ticket_count' => count($request->kursi),
-                'subtotal' => $subtotal,
-                'admin_fee' => $adminFee,
-                'total_amount' => $totalAmount,
-                'method' => $request->method,
-                'booking_code' => $bookingCode,
-                'status' => 'success',
-            ]);
-
-            DB::commit();
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Pembayaran berhasil diproses',
-                'data' => $payment->load(['jadwal.film', 'jadwal.studio'])
-            ]);
-        } 
-        catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Payment Processing Error: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal memproses pembayaran: ' . $e->getMessage()
-            ], 500);
-        }
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal memproses pembayaran: ' . $e->getMessage()
+        ], 500);
     }
+}
+
 
     private function getAdminFee($method)
     {

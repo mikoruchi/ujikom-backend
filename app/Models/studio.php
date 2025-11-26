@@ -26,8 +26,5 @@ class Studio extends Model
         return $this->hasMany(Kursi::class);
     }
 
-    public function tickets()
-    {
-        return $this->hasMany(Ticket::class);
-    }
+    
 }
