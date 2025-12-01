@@ -10,6 +10,7 @@ use App\Http\Controllers\Api\V1\TicketPriceController;
 use App\Http\Controllers\CashierController;
 use App\Http\Controllers\SeatController;
 use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\OwnerDashboardController; // TAMBAHKAN INI
 
 Route::prefix('v1')->group(function () {
 
@@ -108,17 +109,18 @@ Route::prefix('v1')->group(function () {
         Route::delete('/studios/{id}', [StudioController::class, 'destroy']);
 
         /*
-        | TICKET PRICES
+        | OWNER DASHBOARD - PERBAIKAN: PASTIKAN TIDAK ADA KESALAHAN SYNTAX
         */
-        Route::get('/ticket-prices', [TicketPriceController::class, 'index']);
-        Route::post('/ticket-prices', [TicketPriceController::class, 'store']);
-        Route::put('/ticket-prices/{id}', [TicketPriceController::class, 'update']);
-        Route::patch('/ticket-prices/{id}/toggle', [TicketPriceController::class, 'toggleStatus']);
-        Route::delete('/ticket-prices/{id}', [TicketPriceController::class, 'destroy']);
-
+        // Dalam route group owner yang sudah ada
+        Route::prefix('owner')->group(function () {
+            Route::get('/dashboard/stats', [OwnerDashboardController::class, 'getDashboardStats']);
+            Route::get('/dashboard/detailed-stats', [OwnerDashboardController::class, 'getDetailedStats']);
+            Route::get('/dashboard/export-data', [OwnerDashboardController::class, 'getExportData']); // TAMBAHKAN INI
+        });
         /*
-        | PAYMENTS - PERBAIKAN ROUTE
+        | PAYMENTS
         */
+        // Dalam group middleware auth
         Route::prefix('payments')->group(function () {
             Route::get('/', [PaymentController::class, 'getAllPayments']);
             Route::get('/stats', [PaymentController::class, 'getPaymentStats']);
@@ -128,8 +130,11 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}/status', [PaymentController::class, 'updatePaymentStatus']);
             Route::post('/{id}/mark-printed', [PaymentController::class, 'markAsPrinted']);
             Route::get('/cashier/transactions', [PaymentController::class, 'getCashierTransactions']);
+            
+            // TAMBAHKAN ROUTE BARU INI
+            Route::get('/booked-seats/{scheduleId}', [PaymentController::class, 'getBookedSeats']);
         });
 
-    });
+    }); // END MIDDLEWARE AUTH
 
-});
+}); // END PREFIX V1
