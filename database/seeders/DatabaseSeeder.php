@@ -147,27 +147,50 @@ class DatabaseSeeder extends Seeder
             }
         }
 
-        // 5️⃣ KURSI untuk setiap studio
-        $studios = Studio::all();
-        foreach ($studios as $studio) {
-            // Generate kursi untuk studio
-            $rows = ceil($studio->capacity / 20);
-            $rowLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L'];
+       
+
+    // ... kode lainnya ...
+
+    // 5️⃣ KURSI untuk setiap studio - SEMUA DEFAULT REGULAR
+    $studios = Studio::all();
+    foreach ($studios as $studio) {
+        // Generate kursi untuk studio
+        $kapasitas = $studio->capacity;
+        $rows = ceil($kapasitas / 20); // 20 kursi per baris
+        
+        // Array huruf untuk baris
+        $rowLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
+        
+        $totalSeatsCreated = 0;
+        
+        for ($i = 0; $i < min($rows, 20); $i++) { // Maksimal 20 baris
+            // Untuk baris terakhir, hitung berapa kursi yang harus dibuat
+            $currentRowSeats = ($i === $rows - 1) ? ($kapasitas - ($i * 20)) : 20;
             
-            for ($i = 0; $i < $rows; $i++) {
-                $currentRowSeats = ($i === $rows - 1) ? ($studio->capacity - ($i * 20)) : 20;
+            for ($j = 1; $j <= $currentRowSeats; $j++) {
+                $seatNumber = $rowLetters[$i] . $j;
                 
-                for ($j = 1; $j <= $currentRowSeats; $j++) {
-                    Kursi::create([
-                        'studio_id' => $studio->id,
-                        'kursi_no' => $rowLetters[$i] . $j,
-                        'kursi_type' => ($i < 2) ? 'VIP' : 'Regular',
-                        'status' => 'available',
-                    ]);
+                // SEMUA KURSI DEFAULT REGULAR
+                $seatType = 'regular';
+                
+                // Untuk studio dengan 150 kursi, 10 kursi terakhir di set maintenance
+                $status = 'available';
+                if ($studio->capacity === 150 && $totalSeatsCreated >= 140) {
+                    $status = 'maintenance';
                 }
+                
+                Kursi::create([
+                    'studio_id' => $studio->id,
+                    'kursi_no' => $seatNumber,
+                    'kursi_type' => $seatType, // SEMUA DEFAULT REGULAR
+                    'status' => $status,
+                ]);
+                
+                $totalSeatsCreated++;
             }
         }
-
-        echo "Semangat ya sayang ngoding nya 😘\n";
     }
+
+    echo "Semangat ya sayang ngoding nya 😘\n";
+}
 }

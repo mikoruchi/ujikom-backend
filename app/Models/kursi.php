@@ -12,8 +12,13 @@ class Kursi extends Model
     protected $fillable = [
         'studio_id',
         'kursi_no',
-        'kursi_type',
-        'status'
+        'kursi_type',  // regular, vip
+        'status'       // available, maintenance
+    ];
+
+    protected $casts = [
+        'kursi_type' => 'string',
+        'status' => 'string'
     ];
 
     public function studio()

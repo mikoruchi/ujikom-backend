@@ -78,6 +78,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/studio/{studioId}', [SeatController::class, 'index']);
             Route::get('/statistics/{studioId}', [SeatController::class, 'getStatistics']);
             Route::put('/{seatId}/status', [SeatController::class, 'updateStatus']);
+            Route::put('/{seatId}/type', [SeatController::class, 'updateType']);
 
             Route::post('/bulk-update', [SeatController::class, 'bulkUpdate']);
             Route::post('/generate/{studioId}', [SeatController::class, 'generateSeats']);

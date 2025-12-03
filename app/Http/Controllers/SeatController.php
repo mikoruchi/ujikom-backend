@@ -42,14 +42,14 @@ class SeatController extends Controller
         }
     }
 
-    // UPDATE SEAT STATUS
+    // UPDATE SEAT STATUS (available/maintenance)
     public function updateStatus(Request $request, $seatId)
     {
         try {
             $seat = Kursi::findOrFail($seatId);
 
             $validator = Validator::make($request->all(), [
-                'status' => 'required|in:available,maintenance,vip'
+                'status' => 'required|in:available,maintenance'
             ]);
 
             if ($validator->fails()) {
@@ -78,14 +78,14 @@ class SeatController extends Controller
         }
     }
 
-    // BULK UPDATE SEATS
-    public function bulkUpdate(Request $request)
+    // UPDATE SEAT TYPE (regular/vip) - TAMBAHKAN METHOD BARU
+    public function updateType(Request $request, $seatId)
     {
         try {
+            $seat = Kursi::findOrFail($seatId);
+
             $validator = Validator::make($request->all(), [
-                'studio_id' => 'required|exists:studios,id',
-                'action' => 'required|in:reset_all,set_vip_rows,maintenance_mode',
-                'rows' => 'sometimes|array'
+                'kursi_type' => 'required|in:regular,vip'
             ]);
 
             if ($validator->fails()) {
@@ -96,67 +96,140 @@ class SeatController extends Controller
                 ], 422);
             }
 
-            $studioId = $request->studio_id;
-            $action = $request->action;
-
-            switch ($action) {
-                case 'reset_all':
-                    Kursi::where('studio_id', $studioId)->update(['status' => 'available']);
-                    $message = 'Semua kursi berhasil direset ke status normal';
-                    break;
-
-                case 'set_vip_rows':
-                    $rows = $request->rows ?? ['A', 'B'];
-                    foreach ($rows as $row) {
-                        Kursi::where('studio_id', $studioId)
-                            ->where('kursi_no', 'LIKE', $row . '%')
-                            ->update(['status' => 'vip']);
-                    }
-                    $message = 'Baris ' . implode(', ', $rows) . ' berhasil dijadikan VIP';
-                    break;
-
-                case 'maintenance_mode':
-                    Kursi::where('studio_id', $studioId)->update(['status' => 'maintenance']);
-                    $message = 'Semua kursi masuk mode maintenance';
-                    break;
-
-                default:
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Aksi tidak valid'
-                    ], 400);
-            }
+            $seat->update([
+                'kursi_type' => $request->kursi_type
+            ]);
 
             return response()->json([
                 'success' => true,
-                'message' => $message
+                'message' => 'Tipe kursi berhasil diperbarui',
+                'data' => $seat
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'message' => 'Gagal melakukan update bulk',
+                'message' => 'Gagal memperbarui tipe kursi',
                 'error' => $e->getMessage()
             ], 500);
         }
     }
 
-    // GET STUDIO STATISTICS
+    // BULK UPDATE SEATS - DIPERBARUI
+    public function bulkUpdate(Request $request)
+{
+    try {
+        $validator = Validator::make($request->all(), [
+            'studio_id' => 'required|exists:studios,id',
+            'action' => 'required|in:reset_all,set_vip_rows,set_regular_rows,maintenance_mode,available_mode,set_all_vip,set_all_regular', // TAMBAHKAN INI
+            'rows' => 'sometimes|array'
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal',
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $studioId = $request->studio_id;
+        $action = $request->action;
+
+        switch ($action) {
+            case 'reset_all':
+                // Reset semua ke regular dan available
+                Kursi::where('studio_id', $studioId)->update([
+                    'kursi_type' => 'regular',
+                    'status' => 'available'
+                ]);
+                $message = 'Semua kursi berhasil direset ke tipe regular dan status available';
+                break;
+
+            case 'set_all_vip': // TAMBAHKAN INI
+                Kursi::where('studio_id', $studioId)->update([
+                    'kursi_type' => 'vip'
+                ]);
+                $message = 'Semua kursi berhasil dijadikan VIP';
+                break;
+
+            case 'set_all_regular': // TAMBAHKAN INI
+                Kursi::where('studio_id', $studioId)->update([
+                    'kursi_type' => 'regular'
+                ]);
+                $message = 'Semua kursi berhasil dijadikan Regular';
+                break;
+
+            case 'set_vip_rows':
+                $rows = $request->rows ?? ['A', 'B'];
+                foreach ($rows as $row) {
+                    Kursi::where('studio_id', $studioId)
+                        ->where('kursi_no', 'LIKE', $row . '%')
+                        ->update(['kursi_type' => 'vip']);
+                }
+                $message = 'Baris ' . implode(', ', $rows) . ' berhasil dijadikan VIP';
+                break;
+
+            case 'set_regular_rows':
+                $rows = $request->rows ?? ['A', 'B'];
+                foreach ($rows as $row) {
+                    Kursi::where('studio_id', $studioId)
+                        ->where('kursi_no', 'LIKE', $row . '%')
+                        ->update(['kursi_type' => 'regular']);
+                }
+                $message = 'Baris ' . implode(', ', $rows) . ' berhasil dijadikan Regular';
+                break;
+
+            case 'maintenance_mode':
+                Kursi::where('studio_id', $studioId)->update(['status' => 'maintenance']);
+                $message = 'Semua kursi masuk mode maintenance';
+                break;
+
+            case 'available_mode':
+                Kursi::where('studio_id', $studioId)->update(['status' => 'available']);
+                $message = 'Semua kursi masuk mode available';
+                break;
+
+            default:
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Aksi tidak valid'
+                ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => $message
+        ]);
+    } catch (\Exception $e) {
+        return response()->json([
+            'success' => false,
+            'message' => 'Gagal melakukan update bulk',
+            'error' => $e->getMessage()
+        ], 500);
+    }
+}
+
+    // GET STUDIO STATISTICS - DIPERBARUI
     public function getStatistics($studioId)
     {
         try {
             $totalSeats = Kursi::where('studio_id', $studioId)->count();
             $availableSeats = Kursi::where('studio_id', $studioId)->where('status', 'available')->count();
-            $vipSeats = Kursi::where('studio_id', $studioId)->where('status', 'vip')->count();
             $maintenanceSeats = Kursi::where('studio_id', $studioId)->where('status', 'maintenance')->count();
+            
+            // Statistik tipe kursi
+            $regularSeats = Kursi::where('studio_id', $studioId)->where('kursi_type', 'regular')->count();
+            $vipSeats = Kursi::where('studio_id', $studioId)->where('kursi_type', 'vip')->count();
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'total' => $totalSeats,
                     'available' => $availableSeats,
-                    'vip' => $vipSeats,
                     'maintenance' => $maintenanceSeats,
-                    'capacity_percentage' => $totalSeats > 0 ? round(($availableSeats + $vipSeats) / $totalSeats * 100) : 0
+                    'regular' => $regularSeats,
+                    'vip' => $vipSeats,
+                    'capacity_percentage' => $totalSeats > 0 ? round(($availableSeats) / $totalSeats * 100) : 0
                 ]
             ]);
         } catch (\Exception $e) {
@@ -168,7 +241,7 @@ class SeatController extends Controller
         }
     }
 
-    // GENERATE SEATS FOR STUDIO - 20 KURSI PER BARIS
+    // GENERATE SEATS FOR STUDIO - SEMUA DEFAULT REGULAR
     public function generateSeats($studioId)
     {
         try {
@@ -183,11 +256,11 @@ class SeatController extends Controller
                 ], 400);
             }
 
-            $kapasitas = $studio->capacity; // Ambil kapasitas dari database
+            $kapasitas = $studio->capacity;
             
             // Hitung jumlah baris berdasarkan kapasitas dengan 20 kursi per baris
             $rows = ceil($kapasitas / 20);
-            $seatsPerRow = 20; // Tetap 20 kursi per baris
+            $seatsPerRow = 20;
 
             $rowLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
             
@@ -204,13 +277,21 @@ class SeatController extends Controller
                 
                 for ($j = 1; $j <= $currentRowSeats; $j++) {
                     $seatNumber = $rowLetters[$i] . $j;
-                    $seatType = ($i < 2) ? 'vip' : 'regular'; // Baris A dan B VIP
+                    
+                    // SEMUA KURSI DEFAULT REGULAR
+                    $seatType = 'regular';
+                    
+                    // Untuk studio 150 kursi, 10 kursi terakhir jadi maintenance
+                    $status = 'available';
+                    if ($kapasitas === 150 && $totalSeats >= 140) {
+                        $status = 'maintenance';
+                    }
 
                     Kursi::create([
                         'studio_id' => $studioId,
                         'kursi_no' => $seatNumber,
-                        'kursi_type' => $seatType,
-                        'status' => 'available'
+                        'kursi_type' => $seatType, // DEFAULT REGULAR
+                        'status' => $status
                     ]);
                     $totalSeats++;
                 }
@@ -218,12 +299,13 @@ class SeatController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Kursi berhasil digenerate ($totalSeats kursi dari $kapasitas kapasitas) - $rows baris x 20 kursi",
+                'message' => "Kursi berhasil digenerate ($totalSeats kursi dari $kapasitas kapasitas) - Semua tipe regular",
                 'data' => [
                     'kapasitas_database' => $kapasitas,
                     'rows' => $rows,
                     'seats_per_row' => $seatsPerRow,
-                    'total_seats' => $totalSeats
+                    'total_seats' => $totalSeats,
+                    'default_type' => 'regular'
                 ]
             ]);
         } catch (\Exception $e) {
@@ -235,7 +317,7 @@ class SeatController extends Controller
         }
     }
 
-    // REGENERATE SEATS - 20 KURSI PER BARIS
+    // REGENERATE SEATS - SEMUA DEFAULT REGULAR
     public function regenerateSeats($studioId)
     {
         try {
@@ -244,11 +326,11 @@ class SeatController extends Controller
             // Hapus semua kursi yang ada
             Kursi::where('studio_id', $studioId)->delete();
 
-            $kapasitas = $studio->capacity; // Ambil kapasitas dari database
+            $kapasitas = $studio->capacity;
             
             // Hitung jumlah baris berdasarkan kapasitas dengan 20 kursi per baris
             $rows = ceil($kapasitas / 20);
-            $seatsPerRow = 20; // Tetap 20 kursi per baris
+            $seatsPerRow = 20;
 
             $rowLetters = ['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T'];
             
@@ -265,13 +347,21 @@ class SeatController extends Controller
                 
                 for ($j = 1; $j <= $currentRowSeats; $j++) {
                     $seatNumber = $rowLetters[$i] . $j;
-                    $seatType = ($i < 2) ? 'vip' : 'regular'; // Baris A dan B VIP
+                    
+                    // SEMUA KURSI DEFAULT REGULAR
+                    $seatType = 'regular';
+                    
+                    // Untuk studio 150 kursi, 10 kursi terakhir jadi maintenance
+                    $status = 'available';
+                    if ($kapasitas === 150 && $totalSeats >= 140) {
+                        $status = 'maintenance';
+                    }
 
                     Kursi::create([
                         'studio_id' => $studioId,
                         'kursi_no' => $seatNumber,
-                        'kursi_type' => $seatType,
-                        'status' => 'available'
+                        'kursi_type' => $seatType, // DEFAULT REGULAR
+                        'status' => $status
                     ]);
                     $totalSeats++;
                 }
@@ -279,40 +369,19 @@ class SeatController extends Controller
 
             return response()->json([
                 'success' => true,
-                'message' => "Kursi berhasil digenerate ulang ($totalSeats kursi dari $kapasitas kapasitas) - $rows baris x 20 kursi",
+                'message' => "Kursi berhasil digenerate ulang ($totalSeats kursi dari $kapasitas kapasitas) - Semua tipe regular",
                 'data' => [
                     'kapasitas_database' => $kapasitas,
                     'rows' => $rows,
                     'seats_per_row' => $seatsPerRow,
-                    'total_seats' => $totalSeats
+                    'total_seats' => $totalSeats,
+                    'default_type' => 'regular'
                 ]
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Gagal regenerate kursi',
-                'error' => $e->getMessage()
-            ], 500);
-        }
-    }
-
-    // METHOD UNTUK MENDAPATKAN SEMUA KURSI (jika diperlukan)
-    public function getAllSeats()
-    {
-        try {
-            $seats = Kursi::with('studio')
-                ->orderBy('studio_id')
-                ->orderByRaw('LENGTH(kursi_no), kursi_no')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'data' => $seats
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Gagal mengambil data kursi',
                 'error' => $e->getMessage()
             ], 500);
         }
